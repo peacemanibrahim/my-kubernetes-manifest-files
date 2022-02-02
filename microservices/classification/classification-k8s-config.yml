@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classification-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: classification-service-app
+  template:
+    metadata:
+      labels:
+        name: classification-service-app
+    spec:
+      containers:
+      - name: classification-service-app
+        image: rendize/classification-service
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_URL
+          - name: DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_NAME
+          - name: SIGNING_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: SIGNING_KEY
+        volumeMounts:
+        - name: account-configmap-volume
+          mountPath: /etc/config
+          readOnly: true
+      volumes:
+        - name: account-configmap-volume
+          configMap:
+            name: account-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: classification-service
+spec:
+  type: ClusterIP
+  selector:
+    name: classification-service-app
+  ports:
+  - port: 80
+    targetPort: 3000

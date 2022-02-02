@@ -1,0 +1,17 @@
+# Must be applied to the "account" namespace
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: account-ingress-minion
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  - host: api.rendize.com
+    http:
+      paths:
+      - path: /account/.*
+        backend:
+          serviceName: account-service
+          servicePort: 80

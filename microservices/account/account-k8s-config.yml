@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: account-service-app
+  template:
+    metadata:
+      labels:
+        name: account-service-app
+    spec:
+      containers:
+      - name: application
+        image: rendize/account-service
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_URL
+          - name: DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_NAME
+          - name: SIGNING_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: SIGNING_KEY
+          - name: DOMAIN_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DOMAIN_NAME
+          - name: MAILGUN_PRIVATE_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: MAILGUN_PRIVATE_KEY
+          - name: REDIS_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: REDIS_URL
+        volumeMounts:
+        - name: account-configmap-volume
+          mountPath: /etc/config
+          readOnly: true
+      volumes:
+        - name: account-configmap-volume
+          configMap:
+            name: account-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+spec:
+  selector:
+    name: account-service-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: identity-service-app
+  template:
+    metadata:
+      labels:
+        name: identity-service-app
+    spec:
+      containers:
+      - name: application
+        image: rendize/identity-service
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_URL
+          - name: DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_NAME
+          - name: SIGNING_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: SIGNING_KEY
+          - name: AWS_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: AWS_URL
+          - name: AWS_S3_BUCKET_ID
+            valueFrom:
+              secretKeyRef:
+                name: identity-secret
+                key: AWS_S3_BUCKET_ID
+          - name: AWS_S3_BUCKET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: identity-secret
+                key: AWS_S3_BUCKET_KEY
+        volumeMounts:
+        - name: account-configmap-volume
+          mountPath: /etc/config
+          readOnly: true
+        - name: identity-secret-volume
+          mountPath: "/etc/mafatih"
+          readOnly: true
+      volumes:
+        - name: account-configmap-volume
+          configMap:
+            name: account-configmap
+        - name: identity-secret-volume
+          secret:
+            secretName: identity-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-service
+spec:
+  type: ClusterIP
+  selector:
+    name: identity-service-app
+  ports:
+  - port: 80
+    targetPort: 3000

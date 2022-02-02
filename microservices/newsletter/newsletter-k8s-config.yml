@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: newsletter-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: newsletter-service-app
+  template:
+    metadata:
+      labels:
+        name: newsletter-service-app
+    spec:
+      containers:
+      - name: application
+        image: rendize/newsletter-service
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+          - name: DATABASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_URL
+          - name: DATABASE_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: DATABASE_NAME
+          - name: HTTP_PROXY
+            valueFrom:
+              configMapKeyRef:
+                name: account-configmap
+                key: HTTP_PROXY
+          - name: MJ_APIKEY_PUBLIC
+            valueFrom:
+              secretKeyRef:
+                name: newsletter-secret
+                key: MJ_APIKEY_PUBLIC
+          - name: MJ_APIKEY_PRIVATE
+            valueFrom:
+              secretKeyRef:
+                name: newsletter-secret
+                key: MJ_APIKEY_PRIVATE
+        volumeMounts:
+        - name: account-configmap-volume
+          mountPath: /etc/config
+          readOnly: true
+        - name: newsletter-secret-volume
+          mountPath: "/etc/mafatih"
+          readOnly: true
+      volumes:
+        - name: account-configmap-volume
+          configMap:
+            name: account-configmap
+        - name: newsletter-secret-volume
+          secret:
+            secretName: newsletter-secret
+            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: newsletter-service
+spec:
+  type: ClusterIP
+  selector:
+    name: newsletter-service-app
+  ports:
+  - port: 80
+    targetPort: 3000

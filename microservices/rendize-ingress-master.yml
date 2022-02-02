@@ -1,0 +1,16 @@
+# Note must be applied to the "default" namespace
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: rendize-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.org/mergeable-ingress-type: "master"
+spec:
+  tls:
+  - hosts:
+    - api.rendize.com
+    secretName: rendize-api-tls
+  rules:
+  - host: api.rendize.com
